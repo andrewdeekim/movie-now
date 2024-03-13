@@ -1,13 +1,14 @@
-SELECT * FROM actors limit 5;
-SELECT * FROM actsin limit 5;
-SELECT * FROM customers limit 5;
-SELECT * FROM movies limit 5;
-SELECT * FROM renting;
+--Initial head data exploration
+SELECT * FROM `MovieNow.actors` limit 5;
+SELECT * FROM `MovieNow.actsin` limit 5;
+SELECT * FROM `MovieNow.customers` limit 5;
+SELECT * FROM `MovieNow.movies` limit 5;
+SELECT * FROM `MovieNow.renting`;
 
 --How much income did each movie generate?
 SELECT m.title, sum(m.renting_price) AS movie_income
-FROM renting AS r
-INNER JOIN movies AS m
+FROM `MovieNow.renting` AS r
+INNER JOIN `MovieNow.movies` AS m
 USING(movie_id)
 GROUP BY m.title
 ORDER BY movie_income DESC;
@@ -16,8 +17,8 @@ ORDER BY movie_income DESC;
 SELECT m.genre,
 	   COUNT(r.renting_id) AS times_rented,
 	   SUM(m.renting_price) AS total_revenue
-FROM renting AS r
-LEFT JOIN movies AS m
+FROM `MovieNow.renting` AS r
+LEFT JOIN `MovieNow.movies` AS m
 USING(movie_id)
 GROUP BY m.genre
 ORDER BY times_rented DESC;
@@ -28,10 +29,10 @@ SELECT c.name,
 	   sum(m.renting_price) AS total_spent,
 	   COUNT(*) AS times_patronized,
 RANK()OVER(ORDER BY SUM(m.renting_price) DESC) AS rank
-FROM renting AS r
-LEFT JOIN movies AS m
+FROM `MovieNow.renting` AS r
+LEFT JOIN `MovieNow.movies` AS m
 USING(movie_id)
-LEFT JOIN customers AS c
+LEFT JOIN `MovieNow.customers` AS c
 USING(customer_id)
 GROUP BY c.name, r.customer_id
 ) 
@@ -47,23 +48,23 @@ SELECT rm.customer_id,
 FROM
 	(SELECT r.customer_id,
 			m.renting_price
-	FROM renting AS r
-	LEFT JOIN movies AS m
+	FROM `MovieNow.renting` AS r
+	LEFT JOIN `MovieNow.movies` AS m
 	USING(movie_id)) AS rm
 GROUP BY rm.customer_id
 ORDER BY amount_spent DESC;
 
---What is the total number of movie rentals, the average rating of all movies and the total revenue?
-for each country since the beginning of 2019.*/
+-- What is the total number of movie rentals, the average rating of all movies and the total revenue?
+-- for each country since the beginning of 2019.
 SELECT 
 	c.country,                   
 	COUNT(*) AS number_renting,
 	AVG(r.rating) AS average_rating,
 	SUM(m.renting_price) AS revenue       
-FROM renting AS r
-LEFT JOIN customers AS c
+FROM `MovieNow.renting` AS r
+LEFT JOIN `MovieNow.customers` AS c
 ON c.customer_id = r.customer_id
-LEFT JOIN movies AS m
+LEFT JOIN `MovieNow.movies` AS m
 ON m.movie_id = r.movie_id
 WHERE date_renting >= '2019-01-01'
 GROUP BY country
@@ -74,10 +75,10 @@ ORDER BY revenue DESC, average_rating DESC;
 SELECT m.title, 
 	   COUNT(*) AS times_rented,
 	   ROUND(AVG(r.rating), 2) AS avg_rating
-FROM renting AS r
-LEFT JOIN customers AS c
+FROM `MovieNow.renting` AS r
+LEFT JOIN `MovieNow.customers` AS c
 ON c.customer_id = r.customer_id
-LEFT JOIN movies AS m
+LEFT JOIN `MovieNow.movies` AS m
 ON m.movie_id = r.movie_id
 WHERE c.date_of_birth BETWEEN '1970-01-01' AND '1979-12-31'
 GROUP BY m.title
@@ -89,12 +90,12 @@ ORDER BY avg_rating DESC;
 SELECT a.name,  c.gender,
        COUNT(*) AS number_views, 
        ROUND(AVG(r.rating), 2) AS avg_rating
-FROM renting as r
-LEFT JOIN customers AS c
+FROM `MovieNow.renting` as r
+LEFT JOIN `MovieNow.customers` AS c
 ON r.customer_id = c.customer_id
-LEFT JOIN actsin as ai
+LEFT JOIN `MovieNow.actsin` as ai
 ON r.movie_id = ai.movie_id
-LEFT JOIN actors as a
+LEFT JOIN `MovieNow.actors` as a
 ON ai.actor_id = a.actor_id
 WHERE c.country = 'Spain'
 GROUP BY a.name, c.gender
@@ -108,18 +109,18 @@ SELECT
 	country, 
 	genre, 
 	AVG(r.rating) AS avg_rating
-FROM renting AS r
-LEFT JOIN movies AS m
+FROM `MovieNow.renting` AS r
+LEFT JOIN `MovieNow.movies` AS m
 ON m.movie_id = r.movie_id
-LEFT JOIN customers AS c
+LEFT JOIN `MovieNow.customers` AS c
 ON r.customer_id = c.customer_id
 GROUP BY CUBE(country, genre);
 
 --What year did MovieNow make the most money?
 SELECT EXTRACT(YEAR FROM date_renting) AS year,
 		SUM(m.renting_price) AS amount
-FROM renting AS r
-LEFT JOIN movies AS m
+FROM `MovieNow.renting` AS r
+LEFT JOIN `MovieNow.movies` AS m
 USING(movie_id)
 GROUP BY year
 ORDER BY amount DESC

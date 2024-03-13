@@ -1,3 +1,4 @@
+customer_id,name,country,gender,date_of_birth,date_account_start
 1,Robert Bohm,Austria,male,1980-07-30,2018-09-02
 2,Wolfgang Ackermann,Austria,male,1971-11-17,2018-10-15
 3,Daniela Herzog,Austria,female,1974-08-07,2019-02-14
