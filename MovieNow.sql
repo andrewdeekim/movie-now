@@ -12,8 +12,7 @@ USING(movie_id)
 GROUP BY m.title
 ORDER BY movie_income DESC;
 
--- which genre are most in demand
-
+--Which genres are most in demand?
 SELECT m.genre,
 	   COUNT(r.renting_id) AS times_rented,
 	   SUM(m.renting_price) AS total_revenue
@@ -23,8 +22,7 @@ USING(movie_id)
 GROUP BY m.genre
 ORDER BY times_rented DESC;
 
--- Top 5 highest spending customer and the number of times they patronized MovieNow
-
+--Who are the Top 5 highest spending customers and the number of times they patronized MovieNow?
 WITH customer_ranking AS (
 SELECT c.name,
 	   sum(m.renting_price) AS total_spent,
@@ -43,7 +41,7 @@ FROM customer_ranking
 WHERE rank <= 5;
 
 
--- How much money is spent on rentals by each Customer?
+--How much money is spent on rentals by each Customer?
 SELECT rm.customer_id,
 	   SUM(rm.renting_price) AS amount_spent
 FROM
@@ -55,9 +53,8 @@ FROM
 GROUP BY rm.customer_id
 ORDER BY amount_spent DESC;
 
-/*what is the total number of movie rentals, the average rating of all movies and the total revenue 
+--What is the total number of movie rentals, the average rating of all movies and the total revenue?
 for each country since the beginning of 2019.*/
-
 SELECT 
 	c.country,                   
 	COUNT(*) AS number_renting,
@@ -73,7 +70,7 @@ GROUP BY country
 ORDER BY revenue DESC, average_rating DESC;
 
 
---Which is the favorite movie on MovieNow for a specific group of customers: for all customers born in the 70s.
+--Which is the favorite movie on MovieNow for a specific group of customers: for all customers born in the 70s?
 SELECT m.title, 
 	   COUNT(*) AS times_rented,
 	   ROUND(AVG(r.rating), 2) AS avg_rating
@@ -88,8 +85,7 @@ HAVING COUNT(*) > 1
 AND AVG(r.rating) IS NOT NULL
 ORDER BY avg_rating DESC;
 
--- Who is the most popular actor in spain
-
+--Who is the most popular actor in Spain?
 SELECT a.name,  c.gender,
        COUNT(*) AS number_views, 
        ROUND(AVG(r.rating), 2) AS avg_rating
@@ -108,7 +104,6 @@ ORDER BY avg_rating DESC, number_views DESC;
 
 /*Prepare a table for a report about the national preferences of the customers
 from MovieNow comparing the average rating of movies across countries and genres.*/
-
 SELECT 
 	country, 
 	genre, 
@@ -120,8 +115,7 @@ LEFT JOIN customers AS c
 ON r.customer_id = c.customer_id
 GROUP BY CUBE(country, genre);
 
--- what year did MovieNow make more money?
-
+--What year did MovieNow make the most money?
 SELECT EXTRACT(YEAR FROM date_renting) AS year,
 		SUM(m.renting_price) AS amount
 FROM renting AS r
