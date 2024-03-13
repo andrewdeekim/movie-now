@@ -1,4 +1,4 @@
---Initial head data exploration
+--Initial data exploration
 SELECT * FROM `MovieNow.actors` limit 5;
 SELECT * FROM `MovieNow.actsin` limit 5;
 SELECT * FROM `MovieNow.customers` limit 5;
@@ -6,7 +6,7 @@ SELECT * FROM `MovieNow.movies` limit 5;
 SELECT * FROM `MovieNow.renting`;
 
 --How much income did each movie generate?
-SELECT m.title, sum(m.renting_price) AS movie_income
+SELECT m.title, ROUND(SUM(m.renting_price),2) AS movie_income
 FROM `MovieNow.renting` AS r
 INNER JOIN `MovieNow.movies` AS m
 USING(movie_id)
@@ -16,7 +16,7 @@ ORDER BY movie_income DESC;
 --Which genres are most in demand?
 SELECT m.genre,
 	   COUNT(r.renting_id) AS times_rented,
-	   SUM(m.renting_price) AS total_revenue
+	   ROUND(SUM(m.renting_price),2) AS total_revenue
 FROM `MovieNow.renting` AS r
 LEFT JOIN `MovieNow.movies` AS m
 USING(movie_id)
@@ -26,7 +26,7 @@ ORDER BY times_rented DESC;
 --Who are the Top 5 highest spending customers and the number of times they patronized MovieNow?
 WITH customer_ranking AS (
 SELECT c.name,
-	   sum(m.renting_price) AS total_spent,
+	   ROUND(SUM(m.renting_price),2) AS total_spent,
 	   COUNT(*) AS times_patronized,
 RANK()OVER(ORDER BY SUM(m.renting_price) DESC) AS rank
 FROM `MovieNow.renting` AS r
@@ -44,7 +44,7 @@ WHERE rank <= 5;
 
 --How much money is spent on rentals by each Customer?
 SELECT rm.customer_id,
-	   SUM(rm.renting_price) AS amount_spent
+	   ROUND(SUM(rm.renting_price),2) AS amount_spent
 FROM
 	(SELECT r.customer_id,
 			m.renting_price
@@ -60,7 +60,7 @@ SELECT
 	c.country,                   
 	COUNT(*) AS number_renting,
 	AVG(r.rating) AS average_rating,
-	SUM(m.renting_price) AS revenue       
+	ROUND(SUM(m.renting_price),2) AS revenue       
 FROM `MovieNow.renting` AS r
 LEFT JOIN `MovieNow.customers` AS c
 ON c.customer_id = r.customer_id
@@ -118,7 +118,7 @@ GROUP BY CUBE(country, genre);
 
 --What year did MovieNow make the most money?
 SELECT EXTRACT(YEAR FROM date_renting) AS year,
-		SUM(m.renting_price) AS amount
+		ROUND(SUM(m.renting_price),2) AS amount
 FROM `MovieNow.renting` AS r
 LEFT JOIN `MovieNow.movies` AS m
 USING(movie_id)
