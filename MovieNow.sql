@@ -5,122 +5,217 @@ SELECT * FROM `MovieNow.customers` limit 5;
 SELECT * FROM `MovieNow.movies` limit 5;
 SELECT * FROM `MovieNow.renting`;
 
---How much income did each movie generate?
-SELECT m.title, ROUND(SUM(m.renting_price),2) AS movie_income
+
+SELECT *
 FROM `MovieNow.renting` AS r
-INNER JOIN `MovieNow.movies` AS m
-USING(movie_id)
-GROUP BY m.title
-ORDER BY movie_income DESC;
+LEFT JOIN `MovieNow.movies` AS m -- Augment the table with information about movies
+ON r.movie_id = m.movie_id;
 
---Which genres are most in demand?
-SELECT m.genre,
-	   COUNT(r.renting_id) AS times_rented,
-	   ROUND(SUM(m.renting_price),2) AS total_revenue
+
+
+SELECT *
 FROM `MovieNow.renting` AS r
-LEFT JOIN `MovieNow.movies` AS m
-USING(movie_id)
-GROUP BY m.genre
-ORDER BY times_rented DESC;
-
---Who are the Top 5 highest spending customers and the number of times they patronized MovieNow?
-WITH customer_ranking AS (
-SELECT c.name,
-	   ROUND(SUM(m.renting_price),2) AS total_spent,
-	   COUNT(*) AS times_patronized,
-RANK()OVER(ORDER BY SUM(m.renting_price) DESC) AS rank
-FROM `MovieNow.renting` AS r
-LEFT JOIN `MovieNow.movies` AS m
-USING(movie_id)
-LEFT JOIN `MovieNow.customers` AS c
-USING(customer_id)
-GROUP BY c.name, r.customer_id
-) 
-
-SELECT name, total_spent, times_patronized, rank
-FROM customer_ranking
-WHERE rank <= 5;
-
-
---How much money is spent on rentals by each Customer?
-SELECT rm.customer_id,
-	   ROUND(SUM(rm.renting_price),2) AS amount_spent
-FROM
-	(SELECT r.customer_id,
-			m.renting_price
-	FROM `MovieNow.renting` AS r
-	LEFT JOIN `MovieNow.movies` AS m
-	USING(movie_id)) AS rm
-GROUP BY rm.customer_id
-ORDER BY amount_spent DESC;
-
--- What is the total number of movie rentals, the average rating of all movies and the total revenue?
--- for each country since the beginning of 2019.
-SELECT 
-	c.country,                   
-	COUNT(*) AS number_renting,
-	AVG(r.rating) AS average_rating,
-	ROUND(SUM(m.renting_price),2) AS revenue       
-FROM `MovieNow.renting` AS r
-LEFT JOIN `MovieNow.customers` AS c
-ON c.customer_id = r.customer_id
 LEFT JOIN `MovieNow.movies` AS m
 ON m.movie_id = r.movie_id
-WHERE date_renting >= '2019-01-01'
-GROUP BY country
-ORDER BY revenue DESC, average_rating DESC;
+WHERE r.movie_id IN ( -- Select records of movies with at least 4 ratings
+	SELECT movie_id
+	FROM `MovieNow.renting`
+	GROUP BY movie_id
+	HAVING COUNT(rating) >= 4 )
+AND r.date_renting >= '2018-04-01'; -- Select records of movie rentals since 2018-04-01
 
-
---Which is the favorite movie on MovieNow for a specific group of customers: for all customers born in the 70s?
-SELECT m.title, 
-	   COUNT(*) AS times_rented,
-	   ROUND(AVG(r.rating), 2) AS avg_rating
+-- seeing if year of release yields results and also how the results differ by country
+SELECT c.country,
+  m.year_of_release,
+  COUNT(*) AS n_rentals,
+  COUNT(DISTINCT r.movie_id) AS n_movies,
+  AVG(rating) AS avg_rating
 FROM `MovieNow.renting` AS r
 LEFT JOIN `MovieNow.customers` AS c
-ON c.customer_id = r.customer_id
+  USING (customer_id)
+LEFT JOIN `MovieNow.movies` AS m
+  USING (movie_id)
+WHERE r.movie_id IN (
+  SELECT movie_id
+  FROM `MovieNow.renting`
+  GROUP BY movie_id
+  HAVING COUNT(rating) >=4)
+AND r.date_renting >= '2018-04-01'
+GROUP BY ROLLUP (m.year_of_release, c.country)
+ORDER BY c.country, m.year_of_release
+
+
+SELECT m.genre, -- For each genre, calculate:
+	   AVG(r.rating) AS avg_rating,-- The average rating and use the alias avg_rating
+	   COUNT(r.rating) AS n_rating,-- The number of ratings and use the alias n_rating
+	   COUNT(*) AS n_rentals,-- The number of movie rentals and use the alias n_rentals
+	   COUNT (DISTINCT r.movie_id) AS n_movies -- The number of distinct movies and use the alias n_movies
+FROM `MovieNow.renting` AS r
 LEFT JOIN `MovieNow.movies` AS m
 ON m.movie_id = r.movie_id
-WHERE c.date_of_birth BETWEEN '1970-01-01' AND '1979-12-31'
-GROUP BY m.title
-HAVING COUNT(*) > 1
-AND AVG(r.rating) IS NOT NULL
-ORDER BY avg_rating DESC;
+WHERE r.movie_id IN ( 
+	SELECT movie_id
+	FROM `MovieNow.renting`
+	GROUP BY movie_id
+	HAVING COUNT(rating) >= 3)
+AND r.date_renting >= '2018-01-01'
+GROUP BY m.genre;
 
---Who is the most popular actor in Spain?
-SELECT a.name,  c.gender,
-       COUNT(*) AS number_views, 
-       ROUND(AVG(r.rating), 2) AS avg_rating
-FROM `MovieNow.renting` as r
-LEFT JOIN `MovieNow.customers` AS c
-ON r.customer_id = c.customer_id
-LEFT JOIN `MovieNow.actsin` as ai
+
+SELECT genre,
+	   ROUND(AVG(r.rating),2),
+	   COUNT(rating) AS n_rating,
+     COUNT(*) AS n_rentals,     
+	   COUNT(DISTINCT m.movie_id) AS n_movies 
+FROM `MovieNow.renting` AS r
+LEFT JOIN `MovieNow.movies` AS m
+ON m.movie_id = r.movie_id
+WHERE r.movie_id IN ( 
+	SELECT movie_id
+	FROM `MovieNow.renting`
+	GROUP BY movie_id
+	HAVING COUNT(rating) >= 3 )
+AND r.date_renting >= '2018-01-01'
+GROUP BY genre
+ORDER BY avg_rating DESC; -- Order the table by decreasing average rating
+
+
+-- Join the tables
+SELECT *
+FROM `MovieNow.renting` AS r
+LEFT JOIN `MovieNow.actsin` AS ai
 ON r.movie_id = ai.movie_id
-LEFT JOIN `MovieNow.actors` as a
-ON ai.actor_id = a.actor_id
-WHERE c.country = 'Spain'
-GROUP BY a.name, c.gender
-HAVING AVG(r.rating) IS NOT NULL 
-  AND COUNT(*) > 5 
-ORDER BY avg_rating DESC, number_views DESC;
+LEFT JOIN `MovieNow.actors` AS a
+ON ai.actor_id = a.actor_id;
 
-/*Prepare a table for a report about the national preferences of the customers
-from MovieNow comparing the average rating of movies across countries and genres.*/
-SELECT 
-	country, 
-	genre, 
-	AVG(r.rating) AS avg_rating
+
+SELECT a.nationality,
+       a.gender,
+	   AVG(r.rating) AS avg_rating, -- The average rating
+	   COUNT(r.rating) AS n_rating, -- The number of ratings
+	   COUNT(*) AS n_rentals, -- The number of movie rentals
+	   COUNT (DISTINCT a.actor_id) AS n_actors -- The number of actors
+FROM `MovieNow.renting` AS r
+LEFT JOIN `MovieNow.actsin` AS ai
+ON ai.movie_id = r.movie_id
+LEFT JOIN `MovieNow.actors` AS a
+ON ai.actor_id = a.actor_id
+WHERE r.movie_id IN ( 
+	SELECT movie_id
+	FROM `MovieNow.renting`
+	GROUP BY movie_id
+	HAVING COUNT(rating) >=4 )
+AND r.date_renting >= '2018-04-01'
+GROUP BY (a.nationality, a.gender); -- Report results for each combination of the actors' nationality and gender
+
+
+SELECT a.nationality,
+       a.gender,
+	   AVG(r.rating) AS avg_rating,
+	   COUNT(r.rating) AS n_rating,
+	   COUNT(*) AS n_rentals,
+	   COUNT(DISTINCT a.actor_id) AS n_actors
+FROM `MovieNow.renting` AS r
+LEFT JOIN `MovieNow.actsin` AS ai
+ON ai.movie_id = r.movie_id
+LEFT JOIN `MovieNow.actors` AS a
+ON ai.actor_id = a.actor_id
+WHERE r.movie_id IN ( 
+	SELECT movie_id
+	FROM `MovieNow.renting`
+	GROUP BY movie_id
+	HAVING COUNT(rating) >= 4)
+AND r.date_renting >= '2018-04-01'
+GROUP BY GROUPING SETS ((a.nationality, a.gender), (a.nationality), (a.gender), ()) -- Provide results for all aggregation levels represented in a pivot table AS r
+LEFT JOIN `MovieNow.movies` AS m
+ON m.movie_id = r.movie_id
+WHERE r.movie_id IN ( -- Select records of movies with at least 4 ratings
+	SELECT movie_id
+	FROM `MovieNow.renting`
+	GROUP BY movie_id
+	HAVING COUNT(rating) >= 4 )
+AND r.date_renting >= '2018-04-01'; -- Select records of movie rentals since 2018-04-01
+
+
+SELECT m.genre, -- For each genre, calculate:
+	   AVG(r.rating) AS avg_rating,-- The average rating and use the alias avg_rating
+	   COUNT(r.rating) AS n_rating,-- The number of ratings and use the alias n_rating
+	   COUNT(*) AS n_rentals,-- The number of movie rentals and use the alias n_rentals
+	   COUNT (DISTINCT r.movie_id) AS n_movies -- The number of distinct movies and use the alias n_movies
 FROM `MovieNow.renting` AS r
 LEFT JOIN `MovieNow.movies` AS m
 ON m.movie_id = r.movie_id
-LEFT JOIN `MovieNow.customers` AS c
-ON r.customer_id = c.customer_id
-GROUP BY CUBE(country, genre);
+WHERE r.movie_id IN ( 
+	SELECT movie_id
+	FROM `MovieNow.renting`
+	GROUP BY movie_id
+	HAVING COUNT(rating) >= 3)
+AND r.date_renting >= '2018-01-01'
+GROUP BY m.genre;
 
---What year did MovieNow make the most money?
-SELECT EXTRACT(YEAR FROM date_renting) AS year,
-		ROUND(SUM(m.renting_price),2) AS amount
+
+SELECT genre,
+	   AVG(rating) AS avg_rating,
+	   COUNT(rating) AS n_rating,
+       COUNT(*) AS n_rentals,     
+	   COUNT(DISTINCT m.movie_id) AS n_movies 
 FROM `MovieNow.renting` AS r
 LEFT JOIN `MovieNow.movies` AS m
-USING(movie_id)
-GROUP BY year
-ORDER BY amount DESC
+ON m.movie_id = r.movie_id
+WHERE r.movie_id IN ( 
+	SELECT movie_id
+	FROM `MovieNow.renting`
+	GROUP BY movie_id
+	HAVING COUNT(rating) >= 3 )
+AND r.date_renting >= '2018-01-01'
+GROUP BY genre
+ORDER BY avg_rating DESC; -- Order the table by decreasing average rating
+
+
+-- Join the tables
+SELECT *
+FROM `MovieNow.renting` AS r
+LEFT JOIN `MovieNow.actsin` AS ai
+ON r.movie_id = ai.movie_id
+LEFT JOIN `MovieNow.actors` AS a
+ON ai.actor_id = a.actor_id;
+
+
+SELECT a.nationality,
+       a.gender,
+	   AVG(r.rating) AS avg_rating, -- The average rating
+	   COUNT(r.rating) AS n_rating, -- The number of ratings
+	   COUNT(*) AS n_rentals, -- The number of movie rentals
+	   COUNT (DISTINCT a.actor_id) AS n_actors -- The number of actors
+FROM `MovieNow.renting` AS r
+LEFT JOIN `MovieNow.actsin` AS ai
+ON ai.movie_id = r.movie_id
+LEFT JOIN `MovieNow.actors` AS a
+ON ai.actor_id = a.actor_id
+WHERE r.movie_id IN ( 
+	SELECT movie_id
+	FROM `MovieNow.renting`
+	GROUP BY movie_id
+	HAVING COUNT(rating) >=4 )
+AND r.date_renting >= '2018-04-01'
+GROUP BY (a.nationality, a.gender); -- Report results for each combination of the actors' nationality and gender
+
+
+SELECT a.nationality,
+       a.gender,
+	   AVG(r.rating) AS avg_rating,
+	   COUNT(r.rating) AS n_rating,
+	   COUNT(*) AS n_rentals,
+	   COUNT(DISTINCT a.actor_id) AS n_actors
+FROM `MovieNow.renting` AS r
+LEFT JOIN `MovieNow.actsin` AS ai
+ON ai.movie_id = r.movie_id
+LEFT JOIN `MovieNow.actors` AS a
+ON ai.actor_id = a.actor_id
+WHERE r.movie_id IN ( 
+	SELECT movie_id
+	FROM `MovieNow.renting`
+	GROUP BY movie_id
+	HAVING COUNT(rating) >= 4)
+AND r.date_renting >= '2018-04-01'
+GROUP BY GROUPING SETS ((a.nationality, a.gender), (a.nationality), (a.gender), ()); -- Provide results for all aggregation levels represented in a pivot table
