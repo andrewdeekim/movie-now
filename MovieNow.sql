@@ -201,9 +201,9 @@ AND r.date_renting >= '2018-04-01'
 GROUP BY (a.nationality, a.gender); -- Report results for each combination of the actors' nationality and gender
 
 
-SELECT a.nationality,
-       a.gender,
-	   AVG(r.rating) AS avg_rating,
+SELECT COALESCE(a.nationality, 'All Nationalities'),
+       COALESCE(a.gender, 'All Genders'),
+	   ROUND(AVG(r.rating),2) AS avg_rating,
 	   COUNT(r.rating) AS n_rating,
 	   COUNT(*) AS n_rentals,
 	   COUNT(DISTINCT a.actor_id) AS n_actors
@@ -218,4 +218,4 @@ WHERE r.movie_id IN (
 	GROUP BY movie_id
 	HAVING COUNT(rating) >= 4)
 AND r.date_renting >= '2018-04-01'
-GROUP BY GROUPING SETS ((a.nationality, a.gender), (a.nationality), (a.gender), ()); -- Provide results for all aggregation levels represented in a pivot table
+GROUP BY CUBE (a.nationality, a.gender); -- Provide results for all aggregation levels represented in a pivot table
