@@ -63,7 +63,7 @@ GROUP BY m.genre;
 
 
 SELECT genre,
-	   ROUND(AVG(r.rating),2),
+	   ROUND(AVG(r.rating),2) AS avg_rating,
 	   COUNT(rating) AS n_rating,
      COUNT(*) AS n_rentals,     
 	   COUNT(DISTINCT m.movie_id) AS n_movies 
