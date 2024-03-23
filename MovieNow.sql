@@ -22,7 +22,7 @@ WHERE r.movie_id IN ( -- Select records of movies with at least 4 ratings
 	FROM `MovieNow.renting`
 	GROUP BY movie_id
 	HAVING COUNT(rating) >= 4 )
-AND r.date_renting >= '2018-04-01'; -- Select records of movie rentals since 2018-04-01
+AND r.date_renting >= '2018-01-01'; -- Select records of movie rentals since 2018-01-01
 
 -- seeing if year of release yields results and also how the results differ by country
 SELECT c.country,
@@ -40,7 +40,7 @@ WHERE r.movie_id IN (
   FROM `MovieNow.renting`
   GROUP BY movie_id
   HAVING COUNT(rating) >=4)
-AND r.date_renting >= '2018-04-01'
+AND r.date_renting >= '2018-01-01'
 GROUP BY ROLLUP (m.year_of_release, c.country)
 ORDER BY c.country, m.year_of_release
 
@@ -105,7 +105,7 @@ WHERE r.movie_id IN (
 	FROM `MovieNow.renting`
 	GROUP BY movie_id
 	HAVING COUNT(rating) >=4 )
-AND r.date_renting >= '2018-04-01'
+AND r.date_renting >= '2018-01-01'
 GROUP BY (a.nationality, a.gender); -- Report results for each combination of the actors' nationality and gender
 
 
@@ -125,7 +125,7 @@ WHERE r.movie_id IN (
 	FROM `MovieNow.renting`
 	GROUP BY movie_id
 	HAVING COUNT(rating) >= 4)
-AND r.date_renting >= '2018-04-01'
+AND r.date_renting >= '2018-01-01'
 GROUP BY GROUPING SETS ((a.nationality, a.gender), (a.nationality), (a.gender), ()) -- Provide results for all aggregation levels represented in a pivot table AS r
 LEFT JOIN `MovieNow.movies` AS m
 ON m.movie_id = r.movie_id
@@ -134,7 +134,7 @@ WHERE r.movie_id IN ( -- Select records of movies with at least 4 ratings
 	FROM `MovieNow.renting`
 	GROUP BY movie_id
 	HAVING COUNT(rating) >= 4 )
-AND r.date_renting >= '2018-04-01'; -- Select records of movie rentals since 2018-04-01
+AND r.date_renting >= '2018-01-01'; -- Select records of movie rentals since 2018-04-01
 
 
 SELECT m.genre, -- For each genre, calculate:
@@ -197,7 +197,7 @@ WHERE r.movie_id IN (
 	FROM `MovieNow.renting`
 	GROUP BY movie_id
 	HAVING COUNT(rating) >=4 )
-AND r.date_renting >= '2018-04-01'
+AND r.date_renting >= '2018-01-01'
 GROUP BY (a.nationality, a.gender); -- Report results for each combination of the actors' nationality and gender
 
 
@@ -217,5 +217,5 @@ WHERE r.movie_id IN (
 	FROM `MovieNow.renting`
 	GROUP BY movie_id
 	HAVING COUNT(rating) >= 4)
-AND r.date_renting >= '2018-04-01'
+AND r.date_renting >= '2018-01-01'
 GROUP BY CUBE (a.nationality, a.gender); -- Provide results for all aggregation levels represented in a pivot table
